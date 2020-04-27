@@ -100,3 +100,4 @@ lint/tmp/
 .cxx
 .idea/codeStyles/Project.xml
 .idea/misc.xml
+.idea/codeStyles/codeStyleConfig.xml
