@@ -1,0 +1,64 @@
+language: android
+dist: trusty
+jdk: oraclejdk8
+
+env:
+  global:
+    - GRADLE_CMD_OPTS="--stacktrace --parallel"
+
+branches:
+  only:
+    - develop
+    - master
+
+stages:
+  - name: compile
+    if: tag is blank
+  - name: test
+    if: tag is blank
+  - name: release
+    if: type = push
+
+before_cache:
+  - rm -f $HOME/.gradle/caches/modules-2/modules-2.lock
+  - rm -fr $HOME/.gradle/caches/*/plugin-resolution/
+
+cache:
+  directories:
+    - $HOME/.android/build-cache
+    - $HOME/.gradle/caches/
+    - $HOME/.gradle/wrapper/
+
+before_install:
+  # Install SDK license so Android Gradle plugin can install deps.
+  - mkdir "$ANDROID_HOME/licenses" || true
+  - echo "8933bad161af4178b1185d1a37fbf41ea5269c55" > "$ANDROID_HOME/licenses/android-sdk-license"
+  - echo "d56f5187479451eabf01fb78af6dfcb131a6481e" >> "$ANDROID_HOME/licenses/android-sdk-license"
+  - echo "24333f8a63b6825ea9c5514f83c2829b004d1fee" >> "$ANDROID_HOME/licenses/android-sdk-license"
+
+install: skip
+
+jobs:
+  include:
+    - name: "Build Debug"
+      stage: compile
+      before_script: skip
+      script: ./gradlew assembleDebug $GRADLE_CMD_OPTS
+
+    - name: "Build Release"
+      stage: compile
+      before_script: skip
+      script: ./gradlew assembleRelease $GRADLE_CMD_OPTS
+
+    - name: "Static Analysis"
+      stage: test
+      before_script: skip
+      script: ./gradlew check $GRADLE_CMD_OPTS
+      after_success:
+        - bash <(curl -s https://codecov.io/bash)
+      after_failure:
+        - cat /home/travis/build/CruGlobal/mpdx-android/build/reports/lint-results*.xml
+        - cat /home/travis/build/CruGlobal/mpdx-android/*/build/reports/lint-results*.xml
+
+notifications:
+  email: true
